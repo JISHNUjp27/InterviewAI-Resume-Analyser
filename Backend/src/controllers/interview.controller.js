@@ -53,8 +53,8 @@ async function generateInterviewReportController(req, res) {
             resume: resumeContent,
             selfDescription,
             jobDescription,
-            hasGeneratedResume: hasResume, // Track if resume was uploaded for later resume generation
-            ...interviewReportByAi
+            ...interviewReportByAi,
+            hasGeneratedResume: true  // Set to true since we have resume content for generation
         })
 
         res.status(201).json({
@@ -121,6 +121,10 @@ async function generateResumePdfController(req, res){
             })
         }
 
+        // Update the report to mark that a resume can be generated (since we have resume or self-description)
+        interviewReport.hasGeneratedResume = true
+        await interviewReport.save()
+
         const {resume, jobDescription, selfDescription} = interviewReport
 
         const pdfBuffer = await generateResumePdf({resume, jobDescription, selfDescription})
@@ -140,6 +144,29 @@ async function generateResumePdfController(req, res){
     }
 }
 
-module.exports = {generateInterviewReportController, getInterviewReportByIdController, getAllInterviewReportsController, generateResumePdfController}
+// Add a new endpoint to get resume generation status
+async function getResumeGenerationStatusController(req, res) {
+    try {
+        const { interviewReportId } = req.params
+
+        const interviewReport = await interviewReportModel.findById(interviewReportId)
+        if (!interviewReport) {
+            return res.status(404).json({
+                message: "Interview Report not found"
+            })
+        }
+
+        res.status(200).json({
+            message: "Resume generation status retrieved successfully",
+            hasGeneratedResume: interviewReport.hasGeneratedResume,
+            resumeExists: !!(interviewReport.resume || interviewReport.selfDescription)
+        })
+    } catch (error) {
+        console.error("Get resume generation status error:", error)
+        res.status(500).json({ message: "Could not retrieve resume generation status" })
+    }
+}
+
+module.exports = {generateInterviewReportController, getInterviewReportByIdController, getAllInterviewReportsController, generateResumePdfController, getResumeGenerationStatusController}
 
 
