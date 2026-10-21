@@ -54,7 +54,7 @@ async function generateInterviewReportController(req, res) {
             selfDescription,
             jobDescription,
             ...interviewReportByAi,
-            hasGeneratedResume: true  // Set to true since we have resume content for generation
+            hasGeneratedResume: !!(resumeContent || (selfDescription && selfDescription.trim()))  // Set to true if we have resume or self-description for resume generation
         })
 
         res.status(201).json({
